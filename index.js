@@ -38,6 +38,7 @@ async function fetchContests() {
 
 // Initial fetch of contest data
 fetchContests();
+main();
 
 // Ping the server every 14 minutes and fetch contest data if more than 6 hours have passed
 setInterval(async () => {
