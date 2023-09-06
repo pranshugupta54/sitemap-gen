@@ -2,9 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const xmlbuilder = require('xmlbuilder');
 const { DateTime } = require('luxon'); // Luxon library for date and time manipulation
-const fetchContestsData = require('./fetchContests');
 const app = express();
-require('dotenv').config();
 
 let contestsData = null; // Variable to store fetched contest data
 let lastFetchTime = null; // Variable to store the time of the last fetch
@@ -14,15 +12,6 @@ function convertUnixToIST(unixTimestamp) {
   return DateTime.fromSeconds(unixTimestamp).toFormat('yyyy-MM-dd HH:mm:ss ZZZZ');
 }
 
-async function main() {
-    try {
-        console.log('Pinging...');
-        const contestsData = await fetchContestsData();
-        console.log('Pong!');
-    } catch (error) {
-        console.error('Error pinging the server:', error);
-    }
-}
 // Function to fetch contest data from the API
 async function fetchContests() {
   try {
@@ -38,17 +27,16 @@ async function fetchContests() {
 
 // Initial fetch of contest data
 fetchContests();
-main();
 
-// Ping the server every 14 minutes and fetch contest data if more than 6 hours have passed
+// Ping the server every 6 hours and fetch contest data if more than 6 hours have passed
 setInterval(async () => {
     try {
-        await main();
+        await fetchContests();
         console.log('<======= Sent GET request to AWAKE');
     } catch (error) {
         console.error('Error Pinging', error);
     }
-}, 14 * 60 * 1000);
+}, 6 * 60 * 60 * 1000); // 6 hours
 
 // Endpoint for generating and returning the sitemap XML
 app.get('/sitemap.xml', async (req, res) => {
