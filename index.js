@@ -14,6 +14,15 @@ function convertUnixToIST(unixTimestamp) {
   return DateTime.fromSeconds(unixTimestamp).toFormat('yyyy-MM-dd HH:mm:ss ZZZZ');
 }
 
+async function main() {
+    try {
+        console.log('Pinging...');
+        const contestsData = await fetchContestsData();
+        console.log('Pong!');
+    } catch (error) {
+        console.error('Error pinging the server:', error);
+    }
+}
 // Function to fetch contest data from the API
 async function fetchContests() {
   try {
@@ -33,7 +42,7 @@ fetchContests();
 // Ping the server every 14 minutes and fetch contest data if more than 6 hours have passed
 setInterval(async () => {
     try {
-        await fetchContests();
+        await main();
         console.log('<======= Sent GET request to AWAKE');
     } catch (error) {
         console.error('Error Pinging', error);
