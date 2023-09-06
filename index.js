@@ -63,36 +63,30 @@ setInterval(async () => {
 
 // Function to generate the sitemap XML as a string
 function generateSitemapXML() {
-  // Create the sitemap XML
-  const root = xmlbuilder.create('urlset', {
-    version: '1.0',
-    encoding: 'UTF-8',
-  });
-  root.att('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9');
-
-  contestsData.forEach((contest) => {
-    const contestUrl = `https://www.digitomize.com/contests/${contest.vanity}`;
-    const title = `${contest.name} | Digitomize`;
-    const startTimeIST = convertUnixToIST(contest.startTimeUnix);
-    const description = `${contest.name} starts at ${startTimeIST}`;
-
-    root
-      .ele('url')
-      .ele('loc', {}, contestUrl)
-      .up()
-      .ele('lastmod', {}, new Date().toISOString()) // You can replace this with the actual last modification date
-      .up()
-      .ele('changefreq', {}, 'daily') // You can adjust the change frequency as needed
-      .up()
-      .ele('priority', {}, '0.8') // You can adjust the priority as needed
-      .up()
-      .ele('title', {}, title) // Add the title
-      .up()
-      .ele('description', {}, description); // Add the description
-  });
-
-  return root.end({ pretty: true });
-}
+    // Create the sitemap XML
+    const root = xmlbuilder.create('urlset', {
+      version: '1.0',
+      encoding: 'UTF-8',
+    });
+    root.att('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9');
+  
+    contestsData.forEach((contest) => {
+      const contestUrl = `https://www.digitomize.com/contests/${contest.vanity}`;
+  
+      root
+        .ele('url')
+        .ele('loc', {}, contestUrl)
+        .up()
+        .ele('lastmod', {}, new Date().toISOString()) // You can replace this with the actual last modification date
+        .up()
+        .ele('changefreq', {}, 'daily') // You can adjust the change frequency as needed
+        .up()
+        .ele('priority', {}, '0.8'); // You can adjust the priority as needed
+    });
+  
+    return root.end({ pretty: true });
+  }
+  
 
 // Endpoint for generating and returning the sitemap XML
 app.get('/sitemap.xml', async (req, res) => {
