@@ -39,7 +39,7 @@ function convertUnixToIST(unixTimestamp) {
 async function fetchContests() {
   try {
     console.log('Fetching contest data...');
-    const response = await axios.get('https://digitomize-backend.onrender.com/api/contests'); // Your API URL
+    const response = await axios.get(process.env.API); // Your API URL
     contestsData = response.data.results;
     lastFetchTime = new Date();
     console.log('Contest data fetched successfully.');
