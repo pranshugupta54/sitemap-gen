@@ -5,30 +5,69 @@ const { DateTime } = require('luxon'); // Luxon library for date and time manipu
 const app = express();
 
 
+const { getAllUsers, sendMyUsers } = require('./fetchUsers');
+
+
 const fetchContestsData = require('./fetchContests');
 async function main() {
-    try {
-        console.log('Pinging...');
-        const contestsData = await fetchContestsData();
-        console.log('Pong!');
-    } catch (error) {
-        console.error('Error pinging the server:', error);
-    }
+  try {
+    console.log('Pinging...');
+    const contestsData = await fetchContestsData();
+    const usersData = await getAllUsers();
+    console.log('Pong!');
+  } catch (error) {
+    console.error('Error pinging the server:', error);
+  }
 }
 main();
 setInterval(async () => {
-    try {
-        await main();
-        console.log('<======= Sent GET request to AWAKE');
-    } catch (error) {
-        console.error('Error Pinging', error);
-    }
+  try {
+    await main();
+    console.log('<======= Sent GET request to AWAKE');
+  } catch (error) {
+    console.error('Error Pinging', error);
+  }
 }, 14 * 60 * 1000);
 
 
 let contestsData = null; // Variable to store fetched contest data
 let lastFetchTime = null; // Variable to store the time of the last fetch
 let cachedSitemapXML = null; // Variable to store the cached sitemap XML
+let usersData = null; // Variable to store fetched users data
+
+let staticPages = [
+
+  {
+    url: 'https://www.digitomize.com/',
+    lastmod: new Date().toISOString(),
+    changefreq: 'daily',
+    priority: '1.0'
+  },
+  {
+    url: 'https://www.digitomize.com/contests',
+    lastmod: new Date().toISOString(),
+    changefreq: 'daily',
+    priority: '1.0'
+  },
+  {
+    url: 'https://www.digitomize.com/challenges',
+    lastmod: new Date().toISOString(),
+    changefreq: 'daily',
+    priority: '1.0'
+  },
+  {
+    url: 'https://www.digitomize.com/leaderboard',
+    lastmod: new Date().toISOString(),
+    changefreq: 'daily',
+    priority: '1.0'
+  },
+  {
+    url: 'https://www.digitomize.com/about',
+    lastmod: new Date().toISOString(),
+    changefreq: 'daily',
+    priority: '1.0'
+  },
+]
 
 // Function to convert Unix timestamp to IST time
 function convertUnixToIST(unixTimestamp) {
@@ -41,6 +80,8 @@ async function fetchContests() {
     console.log('Fetching contest data...');
     const response = await axios.get(process.env.API); // Your API URL
     contestsData = response.data.results;
+    await getAllUsers();
+    usersData = await sendMyUsers();
     lastFetchTime = new Date();
     console.log('Contest data fetched successfully.');
   } catch (error) {
@@ -53,40 +94,69 @@ fetchContests();
 
 // Ping the server every 6 hours and fetch contest data if more than 6 hours have passed
 setInterval(async () => {
-    try {
-        await fetchContests();
-        console.log('<======= Sent GET request to AWAKE');
-    } catch (error) {
-        console.error('Error Pinging', error);
-    }
+  try {
+    await fetchContests();
+    await getAllUsers();
+    console.log('<======= Sent GET request to AWAKE');
+  } catch (error) {
+    console.error('Error Pinging', error);
+  }
 }, 6 * 60 * 60 * 1000); // 6 hours
 
 // Function to generate the sitemap XML as a string
 function generateSitemapXML() {
-    // Create the sitemap XML
-    const root = xmlbuilder.create('urlset', {
-      version: '1.0',
-      encoding: 'UTF-8',
-    });
-    root.att('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9');
-  
-    contestsData.forEach((contest) => {
-      const contestUrl = `https://www.digitomize.com/contests/${contest.vanity}`;
-  
-      root
-        .ele('url')
-        .ele('loc', {}, contestUrl)
-        .up()
-        .ele('lastmod', {}, new Date().toISOString()) // You can replace this with the actual last modification date
-        .up()
-        .ele('changefreq', {}, 'daily') // You can adjust the change frequency as needed
-        .up()
-        .ele('priority', {}, '0.8'); // You can adjust the priority as needed
-    });
-  
-    return root.end({ pretty: true });
-  }
-  
+  // Create the sitemap XML
+  const root = xmlbuilder.create('urlset', {
+    version: '1.0',
+    encoding: 'UTF-8',
+  });
+  root.att('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9');
+
+  staticPages.forEach((page) => {
+    root
+      .ele('url')
+      .ele('loc', {}, page.url)
+      .up()
+      .ele('lastmod', {}, page.lastmod)
+      .up()
+      .ele('changefreq', {}, page.changefreq)
+      .up()
+      .ele('priority', {}, page.priority);
+
+  });
+
+  contestsData.forEach((contest) => {
+    const contestUrl = `https://www.digitomize.com/contests/${contest.vanity}`;
+
+    root
+      .ele('url')
+      .ele('loc', {}, contestUrl)
+      .up()
+      .ele('lastmod', {}, new Date().toISOString()) // You can replace this with the actual last modification date
+      .up()
+      .ele('changefreq', {}, 'daily') // You can adjust the change frequency as needed
+      .up()
+      .ele('priority', {}, '1.0'); // You can adjust the priority as needed
+  });
+
+  console.log(usersData);
+  usersData.forEach((user) => {
+    const userUrl = `https://digitomize.com/u/${user.username}`;
+
+    root
+      .ele('url')
+      .ele('loc', {}, userUrl)
+      .up()
+      .ele('lastmod', {}, new Date().toISOString()) // You can replace this with the actual last modification date
+      .up()
+      .ele('changefreq', {}, 'daily') // You can adjust the change frequency as needed
+      .up()
+      .ele('priority', {}, '0.8'); // You can adjust the priority as needed
+  });
+
+  return root.end({ pretty: true });
+}
+
 
 // Endpoint for generating and returning the sitemap XML
 app.get('/sitemap.xml', async (req, res) => {
@@ -111,7 +181,7 @@ app.get('/sitemap.xml', async (req, res) => {
 });
 
 // Start the Express app
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3003;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
